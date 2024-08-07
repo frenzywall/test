@@ -1,0 +1,68 @@
+version: "3.8"
+
+services:
+  todo-client:
+    build: ./todo-client
+    image: todo-client
+    container_name: todo-client
+    restart: always
+    ports:
+      - "3000:80"
+    depends_on:
+      - todo-backend
+    networks:
+      - my-network
+
+  todo-backend:
+    build: ./todo-backend
+    image: todo-backend
+    container_name: todo-backend
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      - todo-database
+    networks:
+      - my-network
+    environment:
+      DB_CONN_STRING: mongodb://admin:adminpassword@todo-database:27017
+      DB_NAME: todo
+      DB_TODOS_COLLECTION_NAME: todos
+      DB_USERS_COLLECTION_NAME: users
+      SERVICE_PORT: 8080
+      SERVICE_IP_ADDRESS: 0.0.0.0
+
+  todo-database:
+    image: mongo:latest
+    container_name: todo-database
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: adminpassword
+      MONGO_INITDB_DATABASE: todo
+    volumes:
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    networks:
+      - my-network
+
+  mongo-express:
+    image: mongo-express
+    container_name: mongo-express
+    restart: always
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
+      ME_CONFIG_MONGODB_ADMINPASSWORD: adminpassword
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: adminpassword
+      ME_CONFIG_MONGODB_SERVER: todo-database
+      ME_CONFIG_MONGODB_PORT: 27017
+    networks:
+      - my-network
+
+networks:
+  my-network:
+    driver: bridge
